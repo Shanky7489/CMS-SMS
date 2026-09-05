@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import api from '../api/axios';
 
 const Login = () => {
     const [role, setRole] = useState('SMS');
@@ -16,27 +17,18 @@ const Login = () => {
         setLoading(true);
 
         try {
-            const response = await fetch('http://localhost:5000/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ smsId: userId, password, role }),
-            });
+            const response = await api.post('/api/auth/login', { smsId: userId, password, role });
+            const data = response.data;
 
-            const data = await response.json();
-
-            if (response.ok) {
-                localStorage.setItem('token', data.token || data._id);
-                localStorage.setItem('user', JSON.stringify(data));
-                if (role === 'CMS') {
-                    navigate('/cms-dashboard');
-                } else {
-                    navigate('/sms-dashboard');
-                }
+            localStorage.setItem('token', data.token || data._id);
+            localStorage.setItem('user', JSON.stringify(data));
+            if (role === 'CMS') {
+                navigate('/cms-dashboard');
             } else {
-                setError(data.message || 'Login failed. Please check your credentials.');
+                navigate('/sms-dashboard');
             }
-        } catch (err) {
-            setError('Server error. Please try again later.');
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
         } finally {
             setLoading(false);
         }
