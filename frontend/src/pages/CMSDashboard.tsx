@@ -11,7 +11,8 @@ import {
     Settings,
     LogOut,
     ArrowRight,
-    X
+    X,
+    RefreshCw
 } from 'lucide-react';
 import { api } from '../api';
 import AlertModal from '../components/AlertModal';
@@ -107,8 +108,6 @@ const CMSDashboard = ({ user, onNavigateToLexAI }: any) => {
         fetchSmeList();
 
         loadData();
-        const interval = setInterval(loadData, 2500); // Live sync every 2.5 seconds
-        return () => clearInterval(interval);
     }, []);
 
     const handleChange = (e: any) => {
@@ -538,11 +537,21 @@ const CMSDashboard = ({ user, onNavigateToLexAI }: any) => {
                                             SMS Live Replies
                                         </h3>
                                     </div>
-                                    {unreadAlertsCount > 0 && (
-                                        <span className="bg-[#DC2626] text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                                            {unreadAlertsCount} NEW
-                                        </span>
-                                    )}
+                                    <div className="flex items-center gap-2">
+                                        <button 
+                                            onClick={loadData}
+                                            disabled={loading}
+                                            className="p-1 hover:bg-slate-100 rounded-md transition-colors text-slate-500 hover:text-slate-800 disabled:opacity-50"
+                                            title="Refresh Replies"
+                                        >
+                                            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                                        </button>
+                                        {unreadAlertsCount > 0 && (
+                                            <span className="bg-[#DC2626] text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                                                {unreadAlertsCount} NEW
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Description */}

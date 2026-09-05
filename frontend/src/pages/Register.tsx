@@ -120,7 +120,7 @@ const Register = () => {
                             value={formData.smsId}
                             onChange={handleChange}
                             required
-                            placeholder="SME-01"
+                            placeholder="Enter your ID"
                             className="w-full rounded-md border border-slate-200 bg-blue-50/40 px-4 py-3 text-slate-900 text-sm outline-none focus:ring-2 focus:ring-slate-900/20 focus:border-slate-300 transition"
                         />
                     </div>
@@ -136,7 +136,7 @@ const Register = () => {
                             value={formData.name}
                             onChange={handleChange}
                             required
-                            placeholder="e.g. Rahul Sharma"
+                            placeholder="Enter your name"
                             className="w-full rounded-md border border-slate-200 bg-white px-4 py-3 text-slate-900 text-sm outline-none focus:ring-2 focus:ring-slate-900/20 focus:border-slate-300 transition placeholder:text-slate-400"
                         />
                     </div>

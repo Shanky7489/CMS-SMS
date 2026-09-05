@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
-import { Gavel, Search, LogOut, FileText, X, Eye } from 'lucide-react';
+import { Gavel, Search, LogOut, FileText, X, Eye, RefreshCw, Send, Paperclip, Bot } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const CASE_CATEGORIES = [
@@ -49,22 +49,21 @@ const SMSDashboard = () => {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const currentSmeId = user?.smsId || 'SME-01'; // Fallback for safety
 
-    useEffect(() => {
-        const fetchCases = async () => {
-            try {
-                // Fetch cases where targetSme matches the logged-in SMS user
-                const fetchedCases = await api.getCases(undefined, currentSmeId);
-                setCases(fetchedCases);
-            } catch (err) {
-                console.error("Failed to load cases:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
+    const fetchCases = async () => {
+        setLoading(true);
+        try {
+            // Fetch cases where targetSme matches the logged-in SMS user
+            const fetchedCases = await api.getCases(undefined, currentSmeId);
+            setCases(fetchedCases);
+        } catch (err) {
+            console.error("Failed to load cases:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchCases();
-        const interval = setInterval(fetchCases, 3000);
-        return () => clearInterval(interval);
     }, [currentSmeId]);
 
     const handleLogout = async () => {
@@ -169,9 +168,19 @@ const SMSDashboard = () => {
                 <div className="bg-white border border-[#E5E7EB] rounded-xl shadow-sm overflow-hidden">
                     {/* Docket Header */}
                     <div className="px-8 py-5 border-b border-[#E5E7EB] flex items-center justify-between bg-white">
-                        <h2 className="text-[18px] font-bold serif-font text-[#111827]">
-                            Docket: {activeTab === 'Pending' ? 'Pending Case Reviews' : activeTab === 'Under Review' ? 'Cases Under Review' : 'Completed Cases'}
-                        </h2>
+                        <div className="flex items-center gap-4">
+                            <h2 className="text-[18px] font-bold serif-font text-[#111827]">
+                                Docket: {activeTab === 'Pending' ? 'Pending Case Reviews' : activeTab === 'Under Review' ? 'Cases Under Review' : 'Completed Cases'}
+                            </h2>
+                            <button 
+                                onClick={fetchCases}
+                                disabled={loading}
+                                className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-500 hover:text-slate-800 disabled:opacity-50"
+                                title="Refresh Cases"
+                            >
+                                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                            </button>
+                        </div>
                         <div className="relative">
                             <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
                             <input 
@@ -393,54 +402,72 @@ const SMSDashboard = () => {
                                     </div>
                                 </div>
                             ) : (
-                                <div>
-                                    <div className="mb-4">
-                                        <h4 className="text-[12px] font-bold uppercase text-[#9CA3AF] mb-3">Case Discussion</h4>
-                                        <div className="space-y-3 mb-4 max-h-48 overflow-y-auto pr-2 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                            {(!selectedCaseForReview.messages || selectedCaseForReview.messages.length === 0) ? (
-                                                <p className="text-gray-500 text-sm text-center italic py-4">No messages yet.</p>
-                                            ) : (
-                                                selectedCaseForReview.messages.map((msg: any, idx: number) => (
-                                                    <div key={idx} className={`p-3 rounded-lg text-[13px] ${msg.sender === 'SMS Specialist' ? 'bg-blue-50 border border-blue-100 ml-8' : 'bg-white border border-gray-200 mr-8 shadow-sm'}`}>
-                                                        <div className="flex justify-between items-center mb-1">
-                                                            <span className="font-bold text-[#111827]">{msg.sender}</span>
-                                                            <span className="text-[10px] text-[#6B7280]">{new Date(msg.createdAt).toLocaleString()}</span>
-                                                        </div>
-                                                        <p className="text-[#374151] whitespace-pre-wrap">{msg.text}</p>
-                                                        {msg.attachments && msg.attachments.length > 0 && (
-                                                            <div className="mt-2 flex flex-wrap gap-1.5 border-t border-black/5 pt-2">
-                                                                {msg.attachments.map((doc: any, i: number) => (
-                                                                    <div key={i} className="flex items-center gap-1 px-2 py-0.5 bg-black/5 rounded text-[11px] text-[#374151] font-medium border border-black/10">
-                                                                        <FileText className="w-3 h-3 text-[#6B7280]" />
-                                                                        <span className="truncate max-w-[150px]">{doc.name}</span>
-                                                                        <button 
-                                                                            onClick={(e) => { e.stopPropagation(); setPreviewDoc(doc); }}
-                                                                            className="ml-1 text-gray-500 hover:text-gray-800"
-                                                                        >
-                                                                            <Eye className="w-3 h-3" />
-                                                                        </button>
-                                                                    </div>
-                                                                ))}
+                                <div className="flex flex-col h-[500px]">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h4 className="text-[13px] font-bold uppercase text-[#111827] tracking-wider flex items-center gap-2">
+                                            <Bot className="w-4 h-4 text-[#1E3A8A]" />
+                                            Case Discussion
+                                        </h4>
+                                        <span className="text-[11px] text-[#6B7280] font-medium bg-gray-100 px-2.5 py-1 rounded-full">
+                                            End-to-End Encrypted
+                                        </span>
+                                    </div>
+                                    
+                                    <div className="flex-1 overflow-y-auto bg-[#F0F2F5] p-4 rounded-xl border border-gray-200 shadow-inner flex flex-col gap-4 relative" style={{ backgroundImage: 'radial-gradient(#CBD5E1 1px, transparent 0)', backgroundSize: '20px 20px' }}>
+                                        {(!selectedCaseForReview.messages || selectedCaseForReview.messages.length === 0) ? (
+                                            <div className="m-auto text-center bg-white/80 backdrop-blur-sm px-4 py-3 rounded-xl border border-gray-200 shadow-sm">
+                                                <p className="text-gray-500 text-sm font-medium">No messages yet.</p>
+                                                <p className="text-gray-400 text-xs mt-1">Start the conversation below.</p>
+                                            </div>
+                                        ) : (
+                                            selectedCaseForReview.messages.map((msg: any, idx: number) => {
+                                                const isSender = msg.sender === 'SMS Specialist';
+                                                return (
+                                                    <div key={idx} className={`flex flex-col ${isSender ? 'items-end' : 'items-start'} max-w-[85%] ${isSender ? 'self-end' : 'self-start'}`}>
+                                                        <span className="text-[10px] text-gray-500 font-semibold mb-1 ml-1 mr-1">{msg.sender}</span>
+                                                        <div className={`p-3.5 shadow-sm relative group ${
+                                                            isSender 
+                                                            ? 'bg-[#1E3A8A] text-white rounded-2xl rounded-br-sm' 
+                                                            : 'bg-white text-[#111827] rounded-2xl rounded-bl-sm border border-gray-100'
+                                                        }`}>
+                                                            <p className={`text-[13.5px] whitespace-pre-wrap leading-relaxed ${isSender ? 'text-white/95' : 'text-gray-700'}`}>{msg.text}</p>
+                                                            
+                                                            {msg.attachments && msg.attachments.length > 0 && (
+                                                                <div className="mt-2.5 flex flex-wrap gap-2 pt-2.5 border-t border-black/10">
+                                                                    {msg.attachments.map((doc: any, i: number) => (
+                                                                        <div key={i} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border cursor-pointer transition-colors ${
+                                                                            isSender 
+                                                                            ? 'bg-white/10 border-white/20 hover:bg-white/20' 
+                                                                            : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                                                                        }`} onClick={(e) => { e.stopPropagation(); setPreviewDoc(doc); }}>
+                                                                            <FileText className={`w-3.5 h-3.5 ${isSender ? 'text-blue-200' : 'text-gray-400'}`} />
+                                                                            <span className="truncate max-w-[150px]">{doc.name}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                            <div className={`text-[9px] mt-1.5 text-right font-medium ${isSender ? 'text-blue-200' : 'text-gray-400'}`}>
+                                                                {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                             </div>
-                                                        )}
+                                                        </div>
                                                     </div>
-                                                ))
-                                            )}
-                                        </div>
+                                                );
+                                            })
+                                        )}
                                     </div>
                                     
                                     {selectedCaseForReview.status === 'Under Review' && (
-                                        <div className="mt-4">
+                                        <div className="mt-4 bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
                                             {/* Show selected attachments */}
                                             {chatAttachments.length > 0 && (
-                                                <div className="flex flex-wrap gap-2 mb-3">
+                                                <div className="flex flex-wrap gap-2 mb-3 px-2">
                                                     {chatAttachments.map((doc, idx) => (
-                                                        <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1 bg-[#EFF4FF] border border-[#2563EB]/30 text-[#2563EB] rounded-md text-[11px] font-medium">
+                                                        <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-[11.5px] font-medium">
                                                             <FileText className="w-3.5 h-3.5" />
-                                                            {doc.name}
+                                                            <span className="truncate max-w-[150px]">{doc.name}</span>
                                                             <button 
                                                                 onClick={() => setChatAttachments(prev => prev.filter((_, i) => i !== idx))}
-                                                                className="ml-1 text-[#2563EB]/70 hover:text-[#DC2626]"
+                                                                className="ml-1.5 text-blue-400 hover:text-red-500 transition-colors p-0.5 rounded-full hover:bg-blue-100"
                                                             >
                                                                 <X className="w-3.5 h-3.5" />
                                                             </button>
@@ -449,31 +476,22 @@ const SMSDashboard = () => {
                                                 </div>
                                             )}
                                             
-                                            <div className="flex gap-3">
-                                                <div className="relative flex-1">
-                                                    <input 
-                                                        type="text" 
-                                                        placeholder="Type your reply to the CMS user..."
-                                                        value={chatInput}
-                                                        onChange={(e) => setChatInput(e.target.value)}
-                                                        className="w-full text-[13px] pl-10 pr-3 py-2 border border-[#D1D5DB] rounded-md focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') handleSendMessage(selectedCaseForReview.id);
-                                                        }}
-                                                    />
+                                            <div className="flex items-end gap-3">
+                                                <div className="flex-1 flex items-center bg-gray-50 border border-gray-200 rounded-xl overflow-visible focus-within:ring-2 focus-within:ring-[#1E3A8A]/20 focus-within:border-[#1E3A8A] transition-all">
+                                                    
                                                     {/* Document selector dropdown */}
-                                                    <div className="absolute left-1.5 top-1/2 -translate-y-1/2">
-                                                        <div className="relative group">
-                                                            <button 
-                                                                className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors flex items-center justify-center"
-                                                                title="Reference existing case document"
-                                                            >
-                                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                                                            </button>
-                                                            <div className="absolute left-0 bottom-full mb-1 hidden group-hover:block w-48 bg-white border border-gray-200 shadow-lg rounded-md py-1 z-50">
-                                                                <p className="px-3 py-1.5 text-[10px] font-bold text-gray-400 uppercase border-b border-gray-100">Attach Reference</p>
-                                                                {selectedCaseForReview.documents && selectedCaseForReview.documents.length > 0 ? (
-                                                                    selectedCaseForReview.documents.map((doc: any, i: number) => (
+                                                    <div className="relative group ml-1">
+                                                        <button 
+                                                            className="p-2.5 text-gray-400 hover:text-[#1E3A8A] rounded-lg transition-colors flex items-center justify-center"
+                                                            title="Reference existing case document"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                                                        </button>
+                                                        <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-56 bg-white border border-gray-200 shadow-xl rounded-xl py-2 z-50 transform origin-bottom-left transition-all">
+                                                            <p className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 mb-1">Attach Reference</p>
+                                                            {selectedCaseForReview.documents && selectedCaseForReview.documents.length > 0 ? (
+                                                                <div className="max-h-48 overflow-y-auto">
+                                                                    {selectedCaseForReview.documents.map((doc: any, i: number) => (
                                                                         <button 
                                                                             key={i}
                                                                             onClick={() => {
@@ -481,24 +499,68 @@ const SMSDashboard = () => {
                                                                                     setChatAttachments(prev => [...prev, doc]);
                                                                                 }
                                                                             }}
-                                                                            className="w-full text-left px-3 py-2 text-[12px] text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                                                            className="w-full text-left px-4 py-2.5 text-[12.5px] text-gray-700 hover:bg-blue-50 hover:text-blue-700 flex items-center gap-2.5 transition-colors"
                                                                         >
-                                                                            <FileText className="w-3 h-3 text-gray-400" />
+                                                                            <FileText className="w-4 h-4 text-blue-500" />
                                                                             <span className="truncate">{doc.name}</span>
                                                                         </button>
-                                                                    ))
-                                                                ) : (
-                                                                    <p className="px-3 py-2 text-[11px] text-gray-400 italic">No documents available</p>
-                                                                )}
-                                                            </div>
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                <p className="px-4 py-3 text-[11px] text-gray-400 italic text-center">No documents available</p>
+                                                            )}
                                                         </div>
                                                     </div>
+
+                                                    <textarea 
+                                                        placeholder="Type your reply to the CMS user..."
+                                                        value={chatInput}
+                                                        onChange={(e) => setChatInput(e.target.value)}
+                                                        className="w-full text-[14px] px-2 py-3 bg-transparent focus:outline-none resize-none max-h-32 min-h-[44px]"
+                                                        rows={1}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                                e.preventDefault();
+                                                                handleSendMessage(selectedCaseForReview.id);
+                                                            }
+                                                        }}
+                                                    />
+                                                    
+                                                    <div className="mr-1">
+                                                        <label className="p-2.5 text-gray-400 hover:text-[#1E3A8A] rounded-lg transition-colors flex items-center justify-center cursor-pointer" title="Upload new document">
+                                                            <input 
+                                                                type="file" 
+                                                                className="hidden" 
+                                                                onChange={(e) => {
+                                                                    const files = Array.from(e.target.files || []);
+                                                                    if (files.length > 0) {
+                                                                        files.forEach(f => {
+                                                                            const reader = new FileReader();
+                                                                            reader.onload = (event) => {
+                                                                                const newDoc = {
+                                                                                    name: f.name,
+                                                                                    size: `${(f.size / (1024 * 1024)).toFixed(2)} MB`,
+                                                                                    url: event.target?.result
+                                                                                };
+                                                                                setChatAttachments(prev => [...prev, newDoc]);
+                                                                            };
+                                                                            reader.readAsDataURL(f);
+                                                                        });
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <Paperclip className="w-5 h-5" />
+                                                        </label>
+                                                    </div>
                                                 </div>
+                                                
                                                 <button 
                                                     onClick={() => handleSendMessage(selectedCaseForReview.id)}
-                                                    className="px-5 py-2 bg-[#1E3A8A] text-white text-[12px] font-bold rounded-md hover:bg-[#1E3A8A]/90 transition-colors uppercase whitespace-nowrap"
+                                                    disabled={(!chatInput.trim() && chatAttachments.length === 0)}
+                                                    className="h-[46px] w-[46px] flex items-center justify-center flex-shrink-0 bg-[#1E3A8A] text-white rounded-full hover:bg-[#1E3A8A]/90 hover:shadow-md hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:ring-offset-2"
+                                                    title="Send Message"
                                                 >
-                                                    Send Reply
+                                                    <Send className="w-5 h-5 ml-1" />
                                                 </button>
                                             </div>
                                         </div>
